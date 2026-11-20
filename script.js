@@ -15,7 +15,7 @@ highScoreEl.textContent = String(highScore).padStart(4, '0');
 // Игровые переменные
 let isRunning = false;
 let score = 0;
-let gameSpeed = 6;
+let gameSpeed = 4;
 let frameCount = 0;
 let animationId;
 
@@ -28,7 +28,8 @@ const player = {
   dy: 0,
   jumpForce: 13.5,
   gravity: 0.72,
-  grounded: false
+  grounded: false,
+  jumps: 0 //
 };
 
 const groundY = 254;
@@ -39,6 +40,7 @@ function jump() {
   if (player.grounded && isRunning) {
     player.dy = -player.jumpForce;
     player.grounded = false;
+    player.jumps++;//
   }
 }
 
@@ -62,7 +64,7 @@ canvas.addEventListener('pointerdown', () => {
 function startGame() {
   isRunning = true;
   score = 0;
-  gameSpeed = 6;
+  gameSpeed = 4;
   frameCount = 0;
   obstacles = [];
   player.y = groundY - player.height;
@@ -75,17 +77,32 @@ function startGame() {
 
 // Создание препятствия (кактуса / лазерного блока)
 function spawnObstacle() {
-  const isTall = Math.random() > 0.5;
-  const height = isTall ? 52 : 34;
-  const width = isTall ? 24 : 38;
+  const type = Math.random();
 
-  obstacles.push({
-    x: canvas.width + 20,
-    y: groundY - height,
-    width: width,
-    height: height
-  });
+  if (type > 0.75 && score > 150) {
+    // Летающий дрон (появляется после 150 очков)
+    obstacles.push({
+      x: canvas.width + 20,
+      y: groundY - 72, // висит в воздухе над землёй
+      width: 34,
+      height: 22,
+      color: '#f59e0b' // оранжевый цвет
+    });
+  } else {
+    // Обычный наземный блок
+    const isTall = Math.random() > 0.5;
+    const height = isTall ? 52 : 34;
+    const width = isTall ? 24 : 38;
+    obstacles.push({
+      x: canvas.width + 20,
+      y: groundY - height,
+      width: width,
+      height: height,
+      color: '#ef4444' // красный цвет
+    });
+  }
 }
+
 
 // Отрисовка игрока
 function drawPlayer() {
@@ -191,4 +208,18 @@ function gameOver() {
   overlaySubtitle.innerHTML = `Твой счёт: <strong>${score}</strong> • Рекорд: <strong>${highScore}</strong>`;
   startBtn.textContent = '↻ ЕЩЁ РАЗ';
   overlay.style.display = 'flex';
+}
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(520, 0.12) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square'; // ретро 8-битный звук
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
 }
